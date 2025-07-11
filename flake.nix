@@ -4,15 +4,10 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-
-    nix-utils.url = "github:padhia/nix-utils";
-    nix-utils.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = {self, nixpkgs, nix-utils, flake-utils}:
+  outputs = {self, nixpkgs, flake-utils}:
   let
-    inherit (nix-utils.lib) pyDevShell;
-
     overlays.default = final: prev: {
       pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
         (py-final: py-prev: {
@@ -28,11 +23,20 @@
         config.allowUnfree = true;
         overlays = [ self.overlays.default ];
       };
+
+      pyPkgs = pkgs.python312Packages;
+
     in {
-      devShells.default = pyDevShell {
-        inherit pkgs;
+      devShells.default = pkgs.mkShell {
         name = "type2sql";
-        pyVer = "312";
+        venvDir = "./.venv";
+        buildInputs = with pyPkgs; [
+          pkgs.ruff
+          pkgs.uv
+          python
+          venvShellHook
+          pytest
+        ];
       };
     };
 
